@@ -733,7 +733,7 @@
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState(null);
             const [activeTab, setActiveTab] = useState('overview');
-            const API_URL = 'http://localhost:5000/api';
+            const API_URL = '/api';
 
             useEffect(() => {
                 fetchStocks();
@@ -1086,6 +1086,9 @@
         }
 
         ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
