@@ -1,14 +1,17 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-import json
 from datetime import datetime
+from pathlib import Path
 
 app = Flask(__name__)
 CORS(app)
 
-# All 365 stocks
+# ============================================================
+# NIFTY 500 STOCKS
+# ============================================================
+
 NIFTY_500_STOCKS = [
-    "RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "HINDUNILVR", "INFY", "HDFC", 
+    "RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "HINDUNILVR", "INFY", "HDFC",
     "SBIN", "BAJFINANCE", "BHARTIARTL", "KOTAKBANK", "ITC", "LT", "AXISBANK",
     "ASIANPAINT", "HCLTECH", "MARUTI", "SUNPHARMA", "TATAMOTORS", "TITAN",
     "BAJAJFINSV", "WIPRO", "ULTRACEMCO", "ADANIENT", "ADANIGREEN", "NTPC",
@@ -70,7 +73,11 @@ NIFTY_500_STOCKS = [
 
 NIFTY_500_STOCKS = list(dict.fromkeys(NIFTY_500_STOCKS))
 
-# Mock data for demo (fallback if yfinance fails)
+
+# ============================================================
+# MOCK DATA
+# ============================================================
+
 MOCK_DATA = {
     "HDFCBANK": {"price": 1850, "pe": 18.5, "pb": 2.1, "roe": 16.5, "div": 1.2},
     "TCS": {"price": 3845, "pe": 28.5, "pb": 5.2, "roe": 22.3, "div": 1.8},
@@ -84,46 +91,54 @@ MOCK_DATA = {
     "HDFC": {"price": 2950, "pe": 35.2, "pb": 4.5, "roe": 13.2, "div": 1.1},
 }
 
+
 def get_mock_analysis(ticker):
-    """Generate analysis from mock data"""
-    mock = MOCK_DATA.get(ticker.upper(), {
-        "price": 3000 + (hash(ticker) % 2000),
-        "pe": 20 + (hash(ticker) % 20),
-        "pb": 2 + (hash(ticker) % 4),
-        "roe": 12 + (hash(ticker) % 12),
-        "div": 1 + (hash(ticker) % 3)
-    })
-    
+    mock = MOCK_DATA.get(
+        ticker.upper(),
+        {
+            "price": 3000 + (hash(ticker) % 2000),
+            "pe": 20 + (hash(ticker) % 20),
+            "pb": 2 + (hash(ticker) % 4),
+            "roe": 12 + (hash(ticker) % 12),
+            "div": 1 + (hash(ticker) % 3)
+        }
+    )
+
     price = mock["price"]
     pe = mock["pe"]
     pb = mock["pb"]
     roe = mock["roe"]
     div = mock["div"]
-    
-    # Simple scoring
+
     rsi = 55 + (hash(ticker) % 20)
-    
+
     tech_score = 55
+
     if rsi > 70:
         tech_score -= 10
     elif rsi < 30:
         tech_score += 10
-    tech_score += (hash(ticker) % 10)
-    
+
+    tech_score += hash(ticker) % 10
+
     fund_score = 50
+
     if pe < 20:
         fund_score += 15
     elif pe > 40:
         fund_score -= 10
+
     if pb < 3:
         fund_score += 10
+
     if roe > 15:
         fund_score += 10
+
     if div > 1.5:
         fund_score += 5
-    
+
     overall_score = int(fund_score * 0.6 + tech_score * 0.4)
-    
+
     if overall_score >= 75:
         verdict = "BUY"
         confidence = "High"
@@ -136,19 +151,26 @@ def get_mock_analysis(ticker):
     else:
         verdict = "REDUCE"
         confidence = "Low"
-    
-    target_12m = price * (1.15 if verdict in ['BUY', 'ACCUMULATE'] else 0.95)
-    target_24m = price * (1.25 if verdict in ['BUY', 'ACCUMULATE'] else 0.85)
-    
+
+    target_12m = price * (
+        1.15 if verdict in ["BUY", "ACCUMULATE"] else 0.95
+    )
+
+    target_24m = price * (
+        1.25 if verdict in ["BUY", "ACCUMULATE"] else 0.85
+    )
+
     return {
         "ticker": ticker,
         "timestamp": datetime.now().isoformat(),
+
         "verdict": {
             "rating": verdict,
             "confidence": confidence,
             "score": overall_score,
             "sector": "Indian Equity"
         },
+
         "pricing": {
             "current_price": round(price, 2),
             "target_12m": round(target_12m, 2),
@@ -156,17 +178,20 @@ def get_mock_analysis(ticker):
             "52w_high": round(price * 1.2, 2),
             "52w_low": round(price * 0.85, 2)
         },
+
         "scores": {
             "technical_score": round(tech_score, 1),
             "fundamental_score": round(fund_score, 1),
             "overall_score": overall_score
         },
+
         "technical_summary": {
             "rsi": round(rsi, 2),
-            "macd_status": "Bullish" if (hash(ticker) % 2) == 0 else "Bearish",
-            "sma_trend": "Uptrend" if (hash(ticker) % 2) == 0 else "Downtrend",
-            "volume_status": "High" if (hash(ticker) % 3) != 0 else "Normal"
+            "macd_status": "Bullish" if hash(ticker) % 2 == 0 else "Bearish",
+            "sma_trend": "Uptrend" if hash(ticker) % 2 == 0 else "Downtrend",
+            "volume_status": "High" if hash(ticker) % 3 != 0 else "Normal"
         },
+
         "fundamental_summary": {
             "PE_Ratio": round(pe, 2),
             "PB_Ratio": round(pb, 2),
@@ -184,6 +209,7 @@ def get_mock_analysis(ticker):
             "Free_Cash_Flow_Million": round(1000 + (hash(ticker) % 5000), 0),
             "Operating_Cash_Flow": round(1500 + (hash(ticker) % 6000), 0)
         },
+
         "risks": [
             "Market volatility",
             "Sector-specific risks",
@@ -191,62 +217,85 @@ def get_mock_analysis(ticker):
         ]
     }
 
+
+# ============================================================
+# FRONTEND
+# ============================================================
+
 @app.route("/")
 def index():
-    """Serve the main HTML page"""
-    try:
-        with open('index.html', 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        return """
-        <html>
-        <body style="font-family: Arial; padding: 50px;">
-            <h1>❌ Error</h1>
-            <p>index.html not found!</p>
-            <p>Make sure index.html is in the same folder as app.py</p>
-            <p>Folder structure should be:</p>
-            <pre>
-DM project folder/
-├── app.py
-├── index.html
-└── requirements.txt
-            </pre>
-        </body>
-        </html>
-        """
+    """Serve index.html regardless of Vercel's working directory."""
+
+    index_path = Path(__file__).resolve().parent / "index.html"
+
+    if index_path.exists():
+        return index_path.read_text(encoding="utf-8")
+
+    return """
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family:Arial;padding:50px">
+        <h1>❌ index.html not found</h1>
+        <p>Make sure index.html is in the same folder as app.py.</p>
+    </body>
+    </html>
+    """, 404
+
+
+# ============================================================
+# API
+# ============================================================
 
 @app.route("/api/stocks")
 def get_stocks():
-    """Get list of all available stocks"""
-    return jsonify({"stocks": NIFTY_500_STOCKS})
+    return jsonify({
+        "stocks": NIFTY_500_STOCKS
+    })
+
 
 @app.route("/api/dashboard/<ticker>")
 def get_dashboard(ticker):
-    """Get analysis for a specific stock"""
-    ticker = ticker.upper().strip().replace(".NS", "").replace(".BO", "")
-    
-    # Check if stock exists
+
+    ticker = (
+        ticker
+        .upper()
+        .strip()
+        .replace(".NS", "")
+        .replace(".BO", "")
+    )
+
     if ticker not in NIFTY_500_STOCKS:
-        return jsonify({"error": f"Stock '{ticker}' not found in database"}), 404
-    
-    # Get mock analysis (demo data)
-    result = get_mock_analysis(ticker)
-    return jsonify(result)
+        return jsonify({
+            "error": f"Stock '{ticker}' not found in database"
+        }), 404
+
+    return jsonify(get_mock_analysis(ticker))
+
 
 @app.route("/api/health")
 def health_check():
-    """Health check endpoint"""
-    return jsonify({"status": "✅ Server is running!", "stocks": len(NIFTY_500_STOCKS)})
+    return jsonify({
+        "status": "Server is running!",
+        "stocks": len(NIFTY_500_STOCKS)
+    })
+
+
+# ============================================================
+# LOCAL DEVELOPMENT
+# ============================================================
 
 if __name__ == "__main__":
-    print("\n" + "=" * 70)
-    print("  ✨ Equity Research Dashboard - Master Prompt v2.0")
-    print("  📊 NSE/BSE Nifty 500 Coverage")
     print("=" * 70)
-    print(f"\n📱 Database: {len(NIFTY_500_STOCKS)} stocks loaded")
-    print("\n🌐 Starting server...")
-    print("   ✓ http://localhost:5000")
-    print("\n⏸️  Press Ctrl+C to stop")
-    print("=" * 70 + "\n")
-    
-    app.run(host="127.0.0.1", port=5000, debug=False, use_reloader=False)
+    print("  Equity Research Dashboard")
+    print("  NSE/BSE Stock Coverage")
+    print("=" * 70)
+    print(f"Database: {len(NIFTY_500_STOCKS)} stocks loaded")
+    print("Server: http://localhost:5000")
+    print("=" * 70)
+
+    app.run(
+        host="127.0.0.1",
+        port=5000,
+        debug=False,
+        use_reloader=False
+    )
