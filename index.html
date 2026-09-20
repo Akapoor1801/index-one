@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal One | Equity Research Dashboard</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body, #root {
+            width: 100%;
+            height: 100%;
+            background: #0A0A0F;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #F8FAFC;
+            background: linear-gradient(135deg, #0A0A0F 0%, #0F0F1A 100%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 1px,
+                    rgba(255, 255, 255, 0.01) 1px,
+                    rgba(255, 255, 255, 0.01) 2px
+                );
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* HEADER */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: rgba(12, 12, 20, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(79, 70, 229, 0.15);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.05);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: -0.03em;
+            animation: pulse-glow 4s ease-in-out infinite;
+        }
+
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            border: 2px solid #00F0FF;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+            animation: logo-breathe 4s ease-in-out infinite;
+        }
+
+        @keyframes logo-breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { color: #F8FAFC; }
+            50% { color: #00F0FF; }
+        }
+
+        .header-search {
+            flex: 1;
+            max-width: 500px;
+            margin: 0 48px;
+        }
+
+        .search-input {
+            width: 100%;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            padding: 0 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #F8FAFC;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #00F0FF;
+            background: rgba(0, 240, 255, 0.05);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+
+        .search-input::placeholder {
+            color: #64748B;
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            color: #22C55E;
+            text-transform: uppercase;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22C55E;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* MAIN LAYOUT */
+        main {
+            margin-top: 64px;
+            padding: 32px 0;
+            min-height: 100vh;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 32px;
+            color: #F8FAFC;
+        }
+
+        .search-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        /* GLASS CARD STYLE */
+        .glass-card {
+            background: rgba(18, 18, 26, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(79, 70, 229, 0.15);
+            border-radius: 8px;
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(79, 70, 229, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.1);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* VERDICT CARD */
+        .verdict-card {
+            grid-column: 1 / -1;
+            background: radial-gradient(circle at center, rgba(168, 85, 247, 0.05), transparent);
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.1), inset 0 1px 2px rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 60px;
+        }
+
+        .score-ring-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            flex-shrink: 0;
+        }
+
+        .score-ring {
+            width: 100%;
+            height: 100%;
+        }
+
+        .score-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .score-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 72px;
+            font-weight: 700;
+            line-height: 1;
+            color: #00F0FF;
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+        }
+
+        .score-label {
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            color: #94A3B8;
+            margin-top: 8px;
+            text-transform: uppercase;
+        }
+
+        .verdict-info {
+            flex: 1;
+        }
+
+        .verdict-badge {
+            display: inline-block;
+            padding: 12px 24px;
+            border: 1px solid;
+            border-radius: 4px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            letter-spacing: 0.08em;
+            margin-bottom: 24px;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.02);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .verdict-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 1px,
+                rgba(255, 255, 255, 0.03) 1px,
+                rgba(255, 255, 255, 0.03) 2px
+            );
+        }
+
+        .verdict-badge.buy {
+            border-color: #22C55E;
+            color: #22C55E;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+        }
+
+        .verdict-badge.accumulate {
+            border-color: #00F0FF;
+            color: #00F0FF;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+
+        .verdict-badge.hold {
+            border-color: #F59E0B;
+            color: #F59E0B;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .verdict-badge.reduce {
+            border-color: #EF4444;
+            color: #EF4444;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .targets-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .target-item {
+            border-left: 2px solid #00F0FF;
+            padding-left: 16px;
+            box-shadow: inset 20px 0 20px rgba(0, 240, 255, 0.02);
+        }
+
+        .target-label {
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            color: #64748B;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .target-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 24px;
+            font-weight: 600;
+            color: #00F0FF;
+        }
+
+        /* TABS */
+        .tabs {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid rgba(79, 70, 229, 0.1);
+            padding-bottom: 16px;
+        }
+
+        .tab {
+            padding: 8px 0;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            letter-spacing: 0.02em;
+            color: #94A3B8;
+            position: relative;
+            transition: color 0.3s;
+            border: none;
+            background: none;
+        }
+
+        .tab:hover {
+            color: #F8FAFC;
+        }
+
+        .tab.active {
+            color: #00F0FF;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -16px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #00F0FF, #A855F7);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+
+        /* DASHBOARD GRID */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .dashboard.full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* METRIC CARDS */
+        .metric-card {
+            background: rgba(18, 18, 26, 0.4);
+            border: 1px solid rgba(79, 70, 229, 0.15);
+            border-radius: 8px;
+            padding: 20px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s;
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05);
+        }
+
+        .metric-card:hover {
+            border-color: rgba(79, 70, 229, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .metric-label {
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            color: #64748B;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            color: #F8FAFC;
+            line-height: 1;
+            margin-bottom: 8px;
+            animation: countUp 0.8s ease-out;
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .metric-subtitle {
+            font-size: 13px;
+            color: #94A3B8;
+        }
+
+        /* SCORE BARS */
+        .score-bar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .score-bar {
+            height: 8px;
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05);
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00F0FF, #A855F7);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: 200% 0; }
+            50% { background-position: 0% 0; }
+        }
+
+        /* STATUS BADGE */
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border: 1px solid;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            background: rgba(255, 255, 255, 0.02);
+            position: relative;
+        }
+
+        .status-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                -45deg,
+                transparent,
+                transparent 1px,
+                rgba(255, 255, 255, 0.03) 1px,
+                rgba(255, 255, 255, 0.03) 2px
+            );
+            border-radius: 4px;
+        }
+
+        .status-badge.bullish {
+            border-color: #22C55E;
+            color: #22C55E;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+        }
+
+        .status-badge.bearish {
+            border-color: #EF4444;
+            color: #EF4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+        }
+
+        .status-badge.neutral {
+            border-color: #94A3B8;
+            color: #94A3B8;
+        }
+
+        /* RISK ITEM */
+        .risk-item {
+            border-left: 3px solid #F59E0B;
+            padding: 16px;
+            padding-left: 20px;
+            background: rgba(255, 255, 255, 0.01);
+            margin-bottom: 12px;
+            border-radius: 4px;
+            box-shadow: inset 8px 0 12px rgba(245, 158, 11, 0.05);
+            transition: all 0.3s;
+        }
+
+        .risk-item:hover {
+            transform: translateX(4px);
+            box-shadow: inset 8px 0 12px rgba(245, 158, 11, 0.1);
+            border-left-color: #F59E0B;
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+        }
+
+        .risk-item.high {
+            border-left-color: #EF4444;
+            box-shadow: inset 8px 0 12px rgba(239, 68, 68, 0.05);
+        }
+
+        .risk-item.high:hover {
+            box-shadow: inset 8px 0 12px rgba(239, 68, 68, 0.1);
+            border-left-color: #EF4444;
+        }
+
+        .risk-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .risk-description {
+            font-size: 12px;
+            color: #94A3B8;
+        }
+
+        /* LOADING */
+        .loading-container {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #00F0FF;
+            letter-spacing: 0.05em;
+            animation: typewriter 3s steps(40) infinite;
+        }
+
+        @keyframes typewriter {
+            0% { width: 0; }
+            50% { width: 100%; }
+            100% { width: 100%; }
+        }
+
+        /* ERROR */
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-left: 3px solid #EF4444;
+            color: #FECACA;
+            padding: 16px 20px;
+            border-radius: 4px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.1);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .search-section {
+                grid-template-columns: 1fr;
+            }
+
+            .verdict-card {
+                flex-direction: column;
+                gap: 32px;
+            }
+
+            .targets-grid {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                padding: 0 16px;
+            }
+
+            .header-search {
+                margin: 0 24px;
+            }
+
+            .container {
+                padding: 0 16px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .page-title {
+                font-size: 20px;
+                margin-bottom: 16px;
+            }
+
+            .search-section {
+                gap: 12px;
+            }
+
+            .glass-card, .metric-card {
+                padding: 16px;
+            }
+
+            .tabs {
+                gap: 16px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .score-ring-container {
+                width: 140px;
+                height: 140px;
+            }
+
+            .score-number {
+                font-size: 48px;
+            }
+
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* INPUT STYLES */
+        input[type="text"],
+        input[type="number"],
+        select {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            color: #F8FAFC;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #00F0FF;
+            background: rgba(0, 240, 255, 0.05);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        select option {
+            background: #1A1A2E;
+            color: #F8FAFC;
+        }
+
+        /* BUTTON STYLES */
+        button {
+            background: rgba(79, 70, 229, 0.1);
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            color: #00F0FF;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            letter-spacing: 0.02em;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: rgba(79, 70, 229, 0.2);
+            border-color: #00F0FF;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function App() {
+            const [stocks, setStocks] = useState([]);
+            const [currentStock, setCurrentStock] = useState(null);
+            const [dashboard, setDashboard] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [activeTab, setActiveTab] = useState('overview');
+            const API_URL = '/api';
+
+            useEffect(() => {
+                fetchStocks();
+            }, []);
+
+            const fetchStocks = async () => {
+                try {
+                    const res = await fetch(`${API_URL}/stocks`);
+                    const data = await res.json();
+                    setStocks(data.stocks);
+                } catch (err) {
+                    setError('Failed to load stocks. Make sure backend is running.');
+                }
+            };
+
+            const analyzeStock = async (ticker) => {
+                setLoading(true);
+                setError(null);
+                try {
+                    const res = await fetch(`${API_URL}/dashboard/${ticker}`);
+                    if (!res.ok) throw new Error('Stock not found');
+                    const data = await res.json();
+                    setDashboard(data);
+                    setCurrentStock(ticker);
+                    setActiveTab('overview');
+                } catch (err) {
+                    setError(`Error analyzing ${ticker}: ${err.message}`);
+                    setDashboard(null);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <>
+                    <header>
+                        <div className="logo">
+                            <div className="logo-icon">⬡</div>
+                            <span>TERMINAL ONE</span>
+                        </div>
+                        <div className="header-search">
+                            <input
+                                type="text"
+                                className="search-input"
+                                placeholder="RELIANCE.NS | TCS.NS | INFY.NS..."
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                        analyzeStock(e.target.value.toUpperCase().replace('.NS', ''));
+                                        e.target.value = '';
+                                    }
+                                }}
+                            />
+                        </div>
+                        <div className="header-status">
+                            <div className="status-dot"></div>
+                            NSE LIVE
+                        </div>
+                    </header>
+
+                    <main>
+                        <div className="container">
+                            <div className="page-title">Equity Research Intelligence</div>
+
+                            <div className="search-section">
+                                <select onChange={(e) => e.target.value && analyzeStock(e.target.value)} defaultValue="">
+                                    <option value="">Select Stock...</option>
+                                    {stocks.map(stock => (
+                                        <option key={stock} value={stock}>{stock}</option>
+                                    ))}
+                                </select>
+                                <input 
+                                    type="text" 
+                                    placeholder="Or enter ticker (e.g., TCS, INFY)..."
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                            analyzeStock(e.target.value.toUpperCase());
+                                            e.target.value = '';
+                                        }
+                                    }}
+                                />
+                                <button onClick={() => fetchStocks()}>Refresh</button>
+                            </div>
+
+                            {error && <div className="error-message">⚠️ {error}</div>}
+
+                            {loading && (
+                                <div className="loading-container">
+                                    <div className="loading-text">FETCHING DATA...</div>
+                                </div>
+                            )}
+
+                            {dashboard && (
+                                <div style={{ animation: 'fadeInUp 0.6s ease-out' }}>
+                                    {/* VERDICT CARD */}
+                                    <div className="glass-card verdict-card" style={{ marginBottom: '48px' }}>
+                                        <div className="score-ring-container">
+                                            <svg className="score-ring" viewBox="0 0 200 200">
+                                                <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(79, 70, 229, 0.1)" strokeWidth="8" />
+                                                <circle 
+                                                    cx="100" 
+                                                    cy="100" 
+                                                    r="90" 
+                                                    fill="none" 
+                                                    stroke={dashboard.verdict.score >= 75 ? '#22C55E' : dashboard.verdict.score >= 45 ? '#F59E0B' : '#EF4444'}
+                                                    strokeWidth="8"
+                                                    strokeDasharray={`${(dashboard.verdict.score / 100) * 565} 565`}
+                                                    strokeLinecap="round"
+                                                    style={{ transition: 'stroke-dasharray 1s ease-out' }}
+                                                />
+                                            </svg>
+                                            <div className="score-value">
+                                                <div className="score-number">{dashboard.verdict.score}</div>
+                                                <div className="score-label">Score</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="verdict-info">
+                                            <div className={`verdict-badge ${dashboard.verdict.rating.toLowerCase()}`}>
+                                                {dashboard.verdict.rating}
+                                            </div>
+                                            <p style={{ color: '#94A3B8', marginBottom: '16px', fontSize: '13px' }}>
+                                                Confidence: <strong style={{ color: '#F8FAFC' }}>{dashboard.verdict.confidence}</strong>
+                                            </p>
+                                            <div className="targets-grid">
+                                                <div className="target-item">
+                                                    <div className="target-label">12M Target</div>
+                                                    <div className="target-value">₹{dashboard.pricing.target_12m.toLocaleString()}</div>
+                                                </div>
+                                                <div className="target-item">
+                                                    <div className="target-label">24M Target</div>
+                                                    <div className="target-value">₹{dashboard.pricing.target_24m.toLocaleString()}</div>
+                                                </div>
+                                                <div className="target-item">
+                                                    <div className="target-label">52W High</div>
+                                                    <div className="target-value">₹{dashboard.pricing['52w_high'].toLocaleString()}</div>
+                                                </div>
+                                                <div className="target-item">
+                                                    <div className="target-label">52W Low</div>
+                                                    <div className="target-value">₹{dashboard.pricing['52w_low'].toLocaleString()}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* TABS */}
+                                    <div className="tabs">
+                                        <button 
+                                            className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('overview')}
+                                        >
+                                            📈 OVERVIEW
+                                        </button>
+                                        <button 
+                                            className={`tab ${activeTab === 'technical' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('technical')}
+                                        >
+                                            🔧 TECHNICAL
+                                        </button>
+                                        <button 
+                                            className={`tab ${activeTab === 'fundamental' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('fundamental')}
+                                        >
+                                            📉 FUNDAMENTAL
+                                        </button>
+                                        <button 
+                                            className={`tab ${activeTab === 'risks' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('risks')}
+                                        >
+                                            ⚠️ RISKS
+                                        </button>
+                                    </div>
+
+                                    {/* OVERVIEW TAB */}
+                                    {activeTab === 'overview' && (
+                                        <div className="dashboard">
+                                            <div className="metric-card" style={{ gridColumn: '1 / -1' }}>
+                                                <span className="metric-label">Current Price</span>
+                                                <div style={{ fontSize: '48px', fontWeight: '700', color: '#00F0FF', fontFamily: 'JetBrains Mono', marginBottom: '8px' }}>
+                                                    ₹{dashboard.pricing.current_price.toLocaleString()}
+                                                </div>
+                                            </div>
+
+                                            <div className="metric-card">
+                                                <span className="metric-label">Technical Score</span>
+                                                <div className="score-bar-container">
+                                                    <div className="score-bar">
+                                                        <div className="score-fill" style={{ width: `${dashboard.scores.technical_score}%` }}></div>
+                                                    </div>
+                                                    <span style={{ fontSize: '14px', color: '#00F0FF', fontWeight: '600' }}>{dashboard.scores.technical_score}/100</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="metric-card">
+                                                <span className="metric-label">Fundamental Score</span>
+                                                <div className="score-bar-container">
+                                                    <div className="score-bar">
+                                                        <div className="score-fill" style={{ width: `${dashboard.scores.fundamental_score}%` }}></div>
+                                                    </div>
+                                                    <span style={{ fontSize: '14px', color: '#A855F7', fontWeight: '600' }}>{dashboard.scores.fundamental_score}/100</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="metric-card">
+                                                <span className="metric-label">RSI (14)</span>
+                                                <div style={{ fontSize: '24px', fontWeight: '600', color: '#F8FAFC', fontFamily: 'JetBrains Mono', marginBottom: '8px' }}>
+                                                    {dashboard.technical_summary.rsi}
+                                                </div>
+                                                <span className="metric-subtitle">
+                                                    {dashboard.technical_summary.rsi > 70 ? '⚠️ Overbought' : dashboard.technical_summary.rsi < 30 ? '✓ Oversold' : 'Neutral'}
+                                                </span>
+                                            </div>
+
+                                            <div className="metric-card">
+                                                <span className="metric-label">MACD Status</span>
+                                                <span className={`status-badge ${dashboard.technical_summary.macd_status.toLowerCase()}`}>
+                                                    {dashboard.technical_summary.macd_status}
+                                                </span>
+                                            </div>
+
+                                            <div className="metric-card">
+                                                <span className="metric-label">SMA Trend</span>
+                                                <span className={`status-badge ${dashboard.technical_summary.sma_trend === 'Uptrend' ? 'bullish' : 'bearish'}`}>
+                                                    {dashboard.technical_summary.sma_trend}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* TECHNICAL TAB */}
+                                    {activeTab === 'technical' && (
+                                        <div className="dashboard">
+                                            <div className="metric-card" style={{ gridColumn: '1 / -1' }}>
+                                                <span className="metric-label">Technical Analysis Summary</span>
+                                                <table style={{ width: '100%', marginTop: '16px' }}>
+                                                    <tbody>
+                                                        <tr style={{ borderBottom: '1px solid rgba(79, 70, 229, 0.1)' }}>
+                                                            <td style={{ padding: '12px 0', color: '#94A3B8' }}>RSI (14)</td>
+                                                            <td style={{ padding: '12px 0', textAlign: 'right', color: '#F8FAFC', fontFamily: 'JetBrains Mono' }}>{dashboard.technical_summary.rsi}</td>
+                                                        </tr>
+                                                        <tr style={{ borderBottom: '1px solid rgba(79, 70, 229, 0.1)' }}>
+                                                            <td style={{ padding: '12px 0', color: '#94A3B8' }}>MACD</td>
+                                                            <td style={{ padding: '12px 0', textAlign: 'right' }}>
+                                                                <span className={`status-badge ${dashboard.technical_summary.macd_status.toLowerCase()}`}>
+                                                                    {dashboard.technical_summary.macd_status}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr style={{ borderBottom: '1px solid rgba(79, 70, 229, 0.1)' }}>
+                                                            <td style={{ padding: '12px 0', color: '#94A3B8' }}>SMA Trend</td>
+                                                            <td style={{ padding: '12px 0', textAlign: 'right' }}>
+                                                                <span className={`status-badge ${dashboard.technical_summary.sma_trend === 'Uptrend' ? 'bullish' : 'bearish'}`}>
+                                                                    {dashboard.technical_summary.sma_trend}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style={{ padding: '12px 0', color: '#94A3B8' }}>Volume</td>
+                                                            <td style={{ padding: '12px 0', textAlign: 'right', color: '#F8FAFC' }}>{dashboard.technical_summary.volume_status}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* FUNDAMENTAL TAB */}
+                                    {activeTab === 'fundamental' && (
+                                        <div className="dashboard">
+                                            {Object.entries(dashboard.fundamental_summary).map(([key, value]) => {
+                                                // Format metric labels
+                                                const labels = {
+                                                    'PE_Ratio': 'P/E Ratio',
+                                                    'PB_Ratio': 'P/B Ratio',
+                                                    'ROE': 'ROE',
+                                                    'Dividend_Yield': 'Dividend Yield',
+                                                    'Current_Ratio': 'Current Ratio',
+                                                    'Debt_Equity': 'Debt to Equity',
+                                                    'Interest_Coverage': 'Interest Coverage',
+                                                    'Operating_Margin': 'Operating Margin',
+                                                    'Net_Profit_Margin': 'Net Profit Margin',
+                                                    'Asset_Turnover': 'Asset Turnover',
+                                                    'EPS': 'Earnings Per Share',
+                                                    'Book_Value_Per_Share': 'Book Value/Share',
+                                                    'Price_to_Sales': 'Price to Sales',
+                                                    'Free_Cash_Flow_Million': 'Free Cash Flow',
+                                                    'Operating_Cash_Flow': 'Operating Cash Flow'
+                                                };
+
+                                                const subtitles = {
+                                                    'PE_Ratio': 'Price to Earnings',
+                                                    'PB_Ratio': 'Price to Book',
+                                                    'ROE': 'Return on Equity',
+                                                    'Dividend_Yield': 'Annual Yield',
+                                                    'Current_Ratio': 'Liquidity Ratio',
+                                                    'Debt_Equity': 'Financial Leverage',
+                                                    'Interest_Coverage': 'Interest Capability',
+                                                    'Operating_Margin': 'Operational Efficiency',
+                                                    'Net_Profit_Margin': 'Net Profitability',
+                                                    'Asset_Turnover': 'Asset Efficiency',
+                                                    'EPS': 'Per Share Earnings',
+                                                    'Book_Value_Per_Share': 'Intrinsic Value',
+                                                    'Price_to_Sales': 'Valuation Multiple',
+                                                    'Free_Cash_Flow_Million': 'Cash Generation',
+                                                    'Operating_Cash_Flow': 'Operating Cash'
+                                                };
+
+                                                // Format display value
+                                                let displayValue = value;
+                                                if (key.includes('Margin') || key === 'ROE' || key === 'Dividend_Yield') {
+                                                    displayValue = typeof value === 'number' ? value.toFixed(1) + '%' : value;
+                                                } else if (key.includes('Cash_Flow') || key.includes('Free_Cash')) {
+                                                    displayValue = typeof value === 'number' ? '₹' + value.toLocaleString() : value;
+                                                } else if (typeof value === 'number') {
+                                                    displayValue = value.toFixed(2);
+                                                }
+
+                                                return (
+                                                    <div key={key} className="metric-card">
+                                                        <span className="metric-label">{labels[key] || key.replace(/_/g, ' ')}</span>
+                                                        <div className="metric-value">{displayValue}</div>
+                                                        <div className="metric-subtitle">{subtitles[key] || ''}</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {/* RISKS TAB */}
+                                    {activeTab === 'risks' && (
+                                        <div style={{ display: 'grid', gap: '16px' }}>
+                                            <div className="glass-card">
+                                                <span className="metric-label">Risk Assessment</span>
+                                                <div style={{ marginTop: '16px' }}>
+                                                    {dashboard.risks.map((risk, idx) => (
+                                                        <div key={idx} className={`risk-item ${idx === 0 ? 'high' : ''}`}>
+                                                            <div className="risk-title">Risk {idx + 1}</div>
+                                                            <div className="risk-description">{risk}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </main>
+                </>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
